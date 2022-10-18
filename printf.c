@@ -1,104 +1,48 @@
 #include "main.h"
 
 /**
- * _printf - custom type of the inbuilt printf function
- * @format: first string
- * Return: the number of characters printed
- * (excluding the null byte)
+ * _printf - produces output according to a format
+ * @format: format string containing the characters and the specifiers
+ * Description: this function will call the get_print() function that will
+ * determine which printing function to call depending on the conversion
+ * specifiers contained into fmt
+ * Return: length of the formatted output string
  */
-
 int _printf(const char *format, ...)
 {
-	int len;
-	int total_len;
-	int i;
-	int j;
-	va_list list;
-	char *buffer;
-	char *str;
-	char *(*f)(va_list);
+    int (*pfunc)(va_list, flags_t *);
+    const char *p;
+    va_list arguments;
+    flags_t flags = {0, 0, 0};
 
-	len = 0;
-	total_len = 0;
-	i = 0;
-	j = 0;
+    register int count = 0;
 
-	/* validate format */
-	if (format == NULL)
-		return (-1);
-
-	buffer = create_buffer();
-	if (buffer == NULL)
-		return (-1);
-
-	/* initialize list_pointer */
-	va_start(list, format);
-
-	while (format[i] != '\0')
-	{
-		/* while format is not '%' */
-		if (format[i] != '%')
-		{
-			len = buffer_check(buffer, len);
-			buffer[len++] = format[i++];
-			total_len++;
-		}
-		else /* if %, find function */
-		{
-			i++;
-			/* case in which \0 comes after % */
-			if (format[i] == '\0')
-			{
-				va_end(list);
-				free(buffer);
-				return (-1);
-			}
-			/* case in which % comes after % */
-			if (format[i] == '%')
-			{
-				len = buffer_check(buffer, len);
-				buffer[len++] = format[i];
-				total_len++;
-			}
-			else
-			{
-				f = get_func(format[i]); /* get function */
-				if (f == NULL)
-				{
-					len = buffer_check(buffer, len);
-					buffer[len++] = '%';
-					total_len++;
-					buffer[len++] = format[i];
-					total_len++;
-				}
-				else /* return string, copy to buffer */
-				{
-					str = f(list);
-					if (str == NULL)
-					{
-						va_end(list);
-						free(buffer);
-						return (-1);
-					}
-					if (format[i] == 'c' && str[0] == '\0')
-					{
-						len = buffer_check(buffer, len);
-						buffer[len++] = '\0';
-						total_len++;
-					}
-					j = 0;
-					while (str[j] != '\0')
-					{
-						len = buffer_check(buffer, len);
-						buffer[len++] = str[j];
-						total_len++;
-						j++;
-					}
-					free(str);
-				}
-			} i++;
-		}
-	}
-	write_buffer(buffer, len, list);
-	return (total_len);
+    va_start(arguments, format);
+    if (!format || (format[0] == '%' && !format[1]))
+        return (-1);
+    if (format[0] == '%' && format[1] == ' ' && !format[2])
+        return (-1);
+    for (p = format; *p; p++)
+    {
+        if (*p == '%')
+        {
+            p++;
+            if (*p == '%')
+            {
+                count += _putchar('%');
+                continue;
+            }
+            while (get_flag(*p, &flags))
+                p++;
+            pfunc = get_print(*p);
+            count += (pfunc)
+                         ? pfunc(arguments, &flags)
+                         : _printf("%%%c", *p);
+        }
+        else
+            count += _putchar(*p);
+    }
+    _putchar(-1);
+    va_end(arguments);
+    return (count);
 }
