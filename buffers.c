@@ -60,7 +60,8 @@ void write_buffer(char *buffer, int len, va_list list)
 	buff = realloc(buffer, len);
 	write(1, buff, len); /* print */
 
-	free(buff); va_end(list);
+	free(buff);
+	va_end(list);
 }
 
 /**
